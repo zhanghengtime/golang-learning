@@ -1,17 +1,60 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
-func feedMe(portion int, eaten int) int {
-	eaten = portion + eaten
-	if eaten >= 5 {
-		fmt.Printf("I'm full! I've eaten %d\n", eaten)
-		return feedMe(1, 0)
+type Robot interface {
+	PowerOn() error
+}
+
+type T850 struct {
+	Name string
+}
+
+func (a *T850) PowerOn() error {
+	return nil
+}
+
+type R2D2 struct {
+	Broken bool
+}
+
+func (r *R2D2) PowerOn() error {
+	if r.Broken {
+		return errors.New("R2D2 is broken")
+	} else {
+		return nil
 	}
-	fmt.Printf("I'm still hungry! I've eaten %d\n", eaten)
-	return feedMe(portion, eaten)
+}
+
+func Boot(r Robot) error {
+	return r.PowerOn()
 }
 
 func main() {
-	fmt.Println(feedMe(1, 0))
+	t := T850{
+		Name: "The Terminator",
+	}
+
+	r := R2D2{
+		Broken: true,
+	}
+
+	err := Boot(&r)
+
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Robot is powered on!")
+	}
+
+	err = Boot(&t)
+
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Robot is powered on!")
+	}
 }
