@@ -1,60 +1,33 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"time"
 )
 
-type Robot interface {
-	PowerOn() error
-}
-
-type T850 struct {
-	Name string
-}
-
-func (a *T850) PowerOn() error {
-	return nil
-}
-
-type R2D2 struct {
-	Broken bool
-}
-
-func (r *R2D2) PowerOn() error {
-	if r.Broken {
-		return errors.New("R2D2 is broken")
-	} else {
-		return nil
+func sender(c chan string) {
+	t := time.NewTicker(1 * time.Second)
+	for {
+		c <- "I'm sending a message"
+		<-t.C
 	}
-}
-
-func Boot(r Robot) error {
-	return r.PowerOn()
 }
 
 func main() {
-	t := T850{
-		Name: "The Terminator",
-	}
-
-	r := R2D2{
-		Broken: true,
-	}
-
-	err := Boot(&r)
-
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("Robot is powered on!")
-	}
-
-	err = Boot(&t)
-
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println("Robot is powered on!")
+	message := make(chan string)
+	stop := make(chan bool)
+	go sender(message)
+	go func() {
+		time.Sleep(time.Second * 2)
+		fmt.Println("Time's up!")
+		stop <- true
+	}()
+	for {
+		select {
+		case <-stop: //通道关闭
+			return
+		case msg := <-message:
+			fmt.Println(msg)
+		}
 	}
 }
