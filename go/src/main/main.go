@@ -2,23 +2,62 @@ package main
 
 import (
 	"fmt"
+	"runtime"
 )
 
-func main() {
-	var c1, c2, c3 chan int
-	var i1, i2 int
-	select {
-	case i1 = <-c1:
-		fmt.Printf("received ", i1, " from c1\n")
-	case c2 <- i2:
-		fmt.Printf("sent ", i2, " to c2\n")
-	case i3, ok := (<-c3):
-		if ok {
-			fmt.Printf("received ", i3, " from c3\n")
-		} else {
-			fmt.Printf("c3 is closed\n")
+//崩溃时需要传递的上下文信息
+type panicContext struct {
+	function string //所在函数
+}
+
+//保护方式允许一个函数
+func ProtectRun(entry func()) {
+
+	//延迟处理的函数
+	defer func() {
+
+		//发生宕机时，获取panic传递的上下文并打印
+		err := recover()
+
+		switch err.(type) {
+		case runtime.Error:
+			fmt.Println("runtime error:", err)
+		default:
+			fmt.Println("error:", err)
 		}
-	default:
-		fmt.Printf("no communication\n")
-	}
+
+	}()
+
+	entry()
+
+}
+
+func main() {
+	fmt.Println("运行前")
+
+	//允许一般手段触发的错误
+	ProtectRun(func() {
+
+		fmt.Println("手动宕机前")
+
+		//使用panic传递上下文
+		panic(&panicContext{
+			"手动触发panic",
+		})
+
+		fmt.Println("手动宕机后")
+	})
+
+	//故意造成空指针访问错误
+	ProtectRun(func() {
+
+		fmt.Println("赋值宕机前")
+
+		var a *int
+		*a = 1
+
+		fmt.Println("赋值宕机后")
+	})
+
+	fmt.Println("运行后")
 }
